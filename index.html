@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>木木 Mumu | 手作包品牌專屬社群</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@300;400;500;700&display=swap');
+        
+        :root {
+            --color-bg: #F9F6F0; /* Off-white / Cream */
+            --color-text: #4A3B32; /* Dark Brown */
+            --color-primary: #8C6D58; /* Latte / Wood */
+            --color-secondary: #D4C4B7; /* Light warm brown */
+            --color-accent: #6B5343; /* Darker Wood */
+        }
+
+        body {
+            font-family: 'Noto Serif TC', serif;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+        }
+
+        /*  masonry layout */
+        .masonry-grid {
+            column-count: 1;
+            column-gap: 1.5rem;
+        }
+        @media (min-width: 640px) { .masonry-grid { column-count: 2; } }
+        @media (min-width: 1024px) { .masonry-grid { column-count: 3; } }
+        
+        .masonry-item {
+            break-inside: avoid;
+            margin-bottom: 1.5rem;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: var(--color-bg); }
+        ::-webkit-scrollbar-thumb { background: var(--color-secondary); border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--color-primary); }
+
+        .btn-primary {
+            background-color: var(--color-primary);
+            color: white;
+            transition: all 0.3s ease;
+        }
+        .btn-primary:hover {
+            background-color: var(--color-accent);
+            transform: translateY(-1px);
+        }
+        
+        .btn-outline {
+            border: 1px solid var(--color-primary);
+            color: var(--color-primary);
+            transition: all 0.3s ease;
+        }
+        .btn-outline:hover {
+            background-color: var(--color-primary);
+            color: white;
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            background-color: rgba(74, 59, 50, 0.6);
+            backdrop-filter: blur(2px);
+        }
+
+        .tab-active {
+            border-bottom: 2px solid var(--color-accent);
+            font-weight: 700;
+            color: var(--color-accent);
+        }
+        
+        .tab-inactive {
+            color: var(--color-primary);
+            opacity: 0.7;
+        }
+        .tab-inactive:hover {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body class="min-h-screen flex flex-col relative pb-20">
+
+    <!-- Navbar -->
+    <header class="sticky top-0 z-40 bg-[#F9F6F0]/90 backdrop-blur-md border-b border-[#D4C4B7]">
+        <div class="max-w-5xl mx-auto px-4 py-4 flex flex-col items-center">
+            <h1 class="text-3xl font-bold text-[#4A3B32] mb-4 tracking-widest">木木 Mumu</h1>
+            <nav class="flex space-x-8 text-lg w-full justify-center">
+                <button id="tab-share" class="pb-2 tab-active px-2 transition-all" onclick="switchTab('share')">分享區</button>
+                <button id="tab-market" class="pb-2 tab-inactive px-2 transition-all" onclick="switchTab('market')">二手交易區</button>
+            </nav>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-5xl mx-auto w-full px-4 py-8">
+        
+        <!-- Share Area -->
+        <section id="view-share" class="block">
+            <div id="share-container" class="masonry-grid">
+                <!-- Posts will be injected here -->
+                <div class="text-center w-full py-10 text-[#8C6D58]">載入中...</div>
+            </div>
+            
+            <!-- FAB for Share -->
+            <button onclick="openModal('modal-share')" class="fixed bottom-8 right-8 w-14 h-14 rounded-full shadow-lg flex items-center justify-center btn-primary text-xl z-30 group" title="新增分享">
+                <i class="fas fa-plus group-hover:scale-110 transition-transform"></i>
+            </button>
+        </section>
+
+        <!-- Market Area -->
+        <section id="view-market" class="hidden">
+            <div class="flex justify-between items-end mb-6">
+                <h2 class="text-xl font-bold border-l-4 border-[#8C6D58] pl-3">二手包包交流</h2>
+                <button onclick="openModal('modal-market')" class="px-4 py-2 rounded-md btn-primary text-sm font-medium shadow-sm">
+                    <i class="fas fa-camera retro mr-1"></i> 賣包留言
+                </button>
+            </div>
+            <div id="market-container" class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <!-- Market items will be injected here -->
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer & Admin Toggle -->
+    <footer class="mt-auto py-6 text-center text-sm text-[#8C6D58] border-t border-[#D4C4B7]">
+        <p>&copy; 2026 木木 Mumu Handmade Bags. All rights reserved.</p>
+        <button id="admin-toggle" class="mt-2 text-xs opacity-50 hover:opacity-100 transition-opacity" onclick="toggleAdmin()">[ 進入管理員模式 ]</button>
+    </footer>
+
+    <!-- MODALS -->
+
+    <!-- Custom Alert/Toast Container -->
+    <div id="toast-container" class="fixed top-20 right-4 z-50 flex flex-col space-y-2"></div>
+
+    <!-- Share Modal -->
+    <div id="modal-share" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+        <div class="bg-[#F9F6F0] w-full max-w-md rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-[#D4C4B7] flex justify-between items-center bg-white">
+                <h3 class="text-lg font-bold">新增分享</h3>
+                <button onclick="closeModal('modal-share')" class="text-[#8C6D58] hover:text-[#4A3B32]"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow">
+                <div class="space-y-4">
+                    <div>
+                        <label class="block text-sm font-medium mb-1">您的暱稱 <span class="text-red-500">*</span></label>
+                        <input type="text" id="share-nickname" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]" placeholder="例如：愛包女孩">
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">照片 <span class="text-red-500">*</span></label>
+                        <p class="text-xs text-[#8C6D58] mb-2">為保持平台效能，送出時將自動為您產生高質感情境圖。</p>
+                        <!-- Simulating upload for demo, actual implementation would need file storage -->
+                        <div class="w-full h-32 border-2 border-dashed border-[#D4C4B7] rounded flex items-center justify-center text-[#8C6D58] bg-white">
+                            <i class="fas fa-image text-2xl mr-2"></i> 點擊送出後自動生成
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">分享內容 <span class="text-red-500">*</span></label>
+                        <textarea id="share-desc" rows="4" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]" placeholder="說說這款包包的故事或穿搭心得..."></textarea>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#D4C4B7] bg-white flex justify-end space-x-3">
+                <button onclick="closeModal('modal-share')" class="px-4 py-2 rounded text-[#4A3B32] hover:bg-[#F9F6F0] transition">取消</button>
+                <button onclick="submitShare()" class="px-6 py-2 rounded btn-primary font-medium">發布</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Market Sell Modal -->
+    <div id="modal-market" class="fixed inset-0 z-50 hidden items-center justify-center modal-overlay p-4">
+        <div class="bg-[#F9F6F0] w-full max-w-lg rounded-lg shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div class="p-4 border-b border-[#D4C4B7] flex justify-between items-center bg-white">
+                <h3 class="text-lg font-bold">賣包留言</h3>
+                <button onclick="closeModal('modal-market')" class="text-[#8C6D58] hover:text-[#4A3B32]"><i class="fas fa-times text-xl"></i></button>
+            </div>
+            <div class="p-6 overflow-y-auto flex-grow custom-scroll">
+                <div class="space-y-4">
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">您的暱稱 <span class="text-red-500">*</span></label>
+                            <input type="text" id="market-nickname" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">包款編號/名稱 <span class="text-red-500">*</span></label>
+                            <input type="text" id="market-model" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]" placeholder="例如：木木經典托特包">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">原買包證明照片 <span class="text-red-500">*</span></label>
+                        <div class="w-full h-24 border-2 border-dashed border-[#D4C4B7] rounded flex flex-col items-center justify-center text-[#8C6D58] bg-white text-sm">
+                            <i class="fas fa-receipt text-xl mb-1"></i> (展示版自動產生佔位圖)
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium mb-1">預計售價 (NT$) <span class="text-red-500">*</span></label>
+                            <input type="number" id="market-price" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]" placeholder="例: 1500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium mb-1">交易方式 <span class="text-red-500">*</span></label>
+                            <input type="text" id="market-method" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]" placeholder="例: 台北面交 / 店到店">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium mb-1">包包介紹 (新舊程度/瑕疵) <span class="text-red-500">*</span></label>
+                        <textarea id="market-desc" rows="3" class="w-full border border-[#D4C4B7] rounded p-2 bg-white focus:outline-none focus:ring-1 focus:ring-[#8C6D58]"></textarea>
+                    </div>
+                    <div class="bg-[#F3EBE1] p-3 rounded text-sm text-[#6B5343]">
+                        <i class="fas fa-info-circle mr-1"></i> 售出後，請直接於下方留言區備註「已賣出」，管理員將為您更新狀態。
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t border-[#D4C4B7] bg-white flex justify-end space-x-3">
+                <button onclick="closeModal('modal-market')" class="px-4 py-2 rounded text-[#4A3B32] hover:bg-[#F9F6F0] transition">取消</button>
+                <button onclick="submitMarket()" class="px-6 py-2 rounded btn-primary font-medium">送出上架</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Script -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, addDoc, updateDoc, doc, getDoc, onSnapshot, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Environment variables setup
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'mumu-bags-app';
+        let firebaseConfig = null;
+        try {
+            firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {
+                // Mock config for local testing if needed
+                projectId: "demo-project" 
+            };
+        } catch (e) {
+            console.error("Firebase config parse error", e);
+        }
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // Global State
+        let currentUser = null;
+        let isAdmin = false;
+        let sharesData = [];
+        let marketData = [];
+        
+        // Expose functions to window for HTML inline usage
+        window.switchTab = switchTab;
+        window.openModal = openModal;
+        window.closeModal = closeModal;
+        window.showToast = showToast;
+        window.toggleAdmin = toggleAdmin;
+        
+        // Initialize Auth FIRST (CRITICAL RULE)
+        async function initAuth() {
+            try {
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+                currentUser = auth.currentUser;
+                console.log("Authenticated as:", currentUser.uid);
+                
+                // Once authenticated, setup listeners
+                setupListeners();
+            } catch (error) {
+                console.error("Auth error:", error);
+                showToast("連線發生錯誤，部分功能可能無法使用", "error");
+            }
+        }
+
+        // Setup Firestore listeners
+        function setupListeners() {
+            if (!currentUser) return;
+
+            const sharesRef = collection(db, 'artifacts', appId, 'public', 'data', 'shares');
+            const marketRef = collection(db, 'artifacts', appId, 'public', 'data', 'market');
+
+            // Listen to Shares
+            onSnapshot(sharesRef, (snapshot) => {
+                sharesData = [];
+                snapshot.forEach((doc) => {
+                    sharesData.push({ id: doc.id, ...doc.data() });
+                });
+                // Sort locally by timestamp descending
+                sharesData.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+                renderShares();
+            }, (error) => {
+                console.error("Shares fetch error:", error);
+            });
+
+            // Listen to Market
+            onSnapshot(marketRef, (snapshot) => {
+                marketData = [];
+                snapshot.forEach((doc) => {
+                    marketData.push({ id: doc.id, ...doc.data() });
+                });
+                // Sort locally by timestamp descending
+                marketData.sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+                renderMarket();
+            }, (error) => {
+                console.error("Market fetch error:", error);
+            });
+        }
+
+        // UI View Toggle
+        function switchTab(tab) {
+            const shareView = document.getElementById('view-share');
+            const marketView = document.getElementById('view-market');
+            const shareBtn = document.getElementById('tab-share');
+            const marketBtn = document.getElementById('tab-market');
+
+            if (tab === 'share') {
+                shareView.classList.remove('hidden');
+                marketView.classList.add('hidden');
+                
+                shareBtn.classList.add('tab-active');
+                shareBtn.classList.remove('tab-inactive');
+                marketBtn.classList.add('tab-inactive');
+                marketBtn.classList.remove('tab-active');
+            } else {
+                shareView.classList.add('hidden');
+                marketView.classList.remove('hidden');
+                
+                marketBtn.classList.add('tab-active');
+                marketBtn.classList.remove('tab-inactive');
+                shareBtn.classList.add('tab-inactive');
+                shareBtn.classList.remove('tab-active');
+            }
+        }
+
+        // Modal Helpers
+        function openModal(id) {
+            document.getElementById(id).classList.remove('hidden');
+            document.getElementById(id).classList.add('flex');
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.add('hidden');
+            document.getElementById(id).classList.remove('flex');
+            
+            // Clear inputs based on modal
+            if(id === 'modal-share') {
+                document.getElementById('share-nickname').value = '';
+                document.getElementById('share-desc').value = '';
+            } else if (id === 'modal-market') {
+                document.getElementById('market-nickname').value = '';
+                document.getElementById('market-model').value = '';
+                document.getElementById('market-price').value = '';
+                document.getElementById('market-method').value = '';
+                document.getElementById('market-desc').value = '';
+            }
+        }
+
+        // Custom Toast
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            const bgColor = type === 'success' ? 'bg-[#8C6D58]' : 'bg-red-500';
+            
+            toast.className = `${bgColor} text-white px-6 py-3 rounded shadow-lg transform transition-all duration-300 translate-x-full flex items-center`;
+            toast.innerHTML = `<i class="${type === 'success' ? 'fas fa-check-circle' : 'fas fa-exclamation-circle'} mr-2"></i> ${message}`;
+            
+            container.appendChild(toast);
+            
+            // Animate in
+            setTimeout(() => {
+                toast.classList.remove('translate-x-full');
+            }, 10);
+            
+            // Remove after 3s
+            setTimeout(() => {
+                toast.classList.add('opacity-0');
+                setTimeout(() => toast.remove(), 300);
+            }, 3000);
+        }
+
+        // Format Date
+        function formatDate(timestamp) {
+            if (!timestamp) return '剛剛';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return `${date.getFullYear()}/${(date.getMonth()+1).toString().padStart(2, '0')}/${date.getDate().toString().padStart(2, '0')}`;
+        }
+
+        // Render Shares (Masonry)
+        function renderShares() {
+            const container = document.getElementById('share-container');
+            if (sharesData.length === 0) {
+                container.innerHTML = `<div class="text-center w-full py-10 text-[#8C6D58] col-span-full">目前還沒有分享，快來搶頭香！</div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            
+            // Local storage for saved items
+            const savedItems = JSON.parse(localStorage.getItem('mumu_saved') || '[]');
+
+            sharesData.forEach(share => {
+                const isSaved = savedItems.includes(share.id);
+                
+                const card = document.createElement('div');
+                card.className = 'masonry-item bg-white rounded-lg shadow-sm border border-[#E8E1DA] overflow-hidden transition-transform duration-300 hover:shadow-md';
+                
+                card.innerHTML = `
+                    <img src="${share.imageUrl}" alt="Share image" class="w-full h-auto object-cover" loading="lazy">
+                    <div class="p-4">
+                        <p class="text-[#4A3B32] mb-3 text-sm leading-relaxed">${escapeHTML(share.description)}</p>
+                        <div class="flex justify-between items-center text-xs text-[#8C6D58] border-t border-[#F3EBE1] pt-3">
+                            <span class="font-medium"><i class="fas fa-user-circle mr-1"></i>${escapeHTML(share.nickname)}</span>
+                            <div class="flex space-x-3">
+                                <button onclick="window.likeShare('${share.id}')" class="hover:text-red-500 transition"><i class="fas fa-heart mr-1"></i>${share.likes || 0}</button>
+                                <button onclick="window.toggleSave('${share.id}')" class="hover:text-[#4A3B32] transition ${isSaved ? 'text-[#4A3B32]' : ''}"><i class="${isSaved ? 'fas' : 'far'} fa-bookmark"></i></button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // Render Market
+        function renderMarket() {
+            const container = document.getElementById('market-container');
+            if (marketData.length === 0) {
+                container.innerHTML = `<div class="text-center w-full py-10 text-[#8C6D58] col-span-full">目前沒有二手包包上架。</div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+
+            marketData.forEach(item => {
+                const card = document.createElement('div');
+                card.className = `bg-white rounded-lg shadow-sm border border-[#E8E1DA] overflow-hidden flex flex-col relative ${item.isSold ? 'opacity-80' : ''}`;
+                
+                // Sold overlay
+                const soldBadge = item.isSold ? `<div class="absolute top-4 right-4 bg-gray-800 text-white px-3 py-1 text-xs font-bold rounded shadow z-10 tracking-widest">已售出</div>` : '';
+                
+                // Admin button
+                const adminBtn = (isAdmin && !item.isSold) ? `<button onclick="window.markAsSold('${item.id}')" class="absolute top-4 left-4 bg-red-600 text-white px-2 py-1 text-xs rounded z-10 shadow"><i class="fas fa-gavel mr-1"></i>標示售出</button>` : '';
+
+                // Comments HTML
+                const comments = item.comments || [];
+                let commentsHTML = comments.map(c => `
+                    <div class="mb-2 bg-[#F9F6F0] p-2 rounded text-sm">
+                        <span class="font-bold text-[#6B5343]">${escapeHTML(c.nickname)}</span>: 
+                        <span class="text-[#4A3B32]">${escapeHTML(c.text)}</span>
+                    </div>
+                `).join('');
+
+                const commentSection = item.isSold ? 
+                    `<div class="mt-4 p-3 bg-gray-100 text-gray-500 text-center text-sm rounded border border-gray-200">商品已售出，關閉留言</div>` 
+                    : `
+                    <div class="mt-4 border-t border-[#F3EBE1] pt-4">
+                        <h4 class="text-sm font-bold mb-2 text-[#8C6D58]"><i class="far fa-comments mr-1"></i>留言區</h4>
+                        <div class="max-h-32 overflow-y-auto mb-2 custom-scroll">${commentsHTML}</div>
+                        <div class="flex space-x-2">
+                            <input type="text" id="comment-nick-${item.id}" placeholder="暱稱" class="w-1/4 border border-[#D4C4B7] rounded px-2 py-1 text-sm bg-white">
+                            <input type="text" id="comment-text-${item.id}" placeholder="留言詢問... 或備註已賣出" class="flex-grow border border-[#D4C4B7] rounded px-2 py-1 text-sm bg-white">
+                            <button onclick="window.addComment('${item.id}')" class="bg-[#8C6D58] text-white px-3 py-1 rounded text-sm hover:bg-[#6B5343]">送出</button>
+                        </div>
+                    </div>`;
+
+                card.innerHTML = `
+                    ${soldBadge}
+                    ${adminBtn}
+                    <div class="flex flex-col sm:flex-row h-full">
+                        <div class="sm:w-2/5 h-48 sm:h-auto relative bg-[#F9F6F0]">
+                             <img src="${item.proofUrl}" alt="包包" class="w-full h-full object-cover p-2">
+                        </div>
+                        <div class="sm:w-3/5 p-4 flex flex-col justify-between">
+                            <div>
+                                <div class="flex justify-between items-start mb-2">
+                                    <h3 class="text-lg font-bold text-[#4A3B32]">${escapeHTML(item.modelId)}</h3>
+                                    <span class="text-[#8C6D58] font-bold text-lg">NT$ ${item.price}</span>
+                                </div>
+                                <p class="text-sm text-[#6B5343] mb-3 leading-relaxed whitespace-pre-line">${escapeHTML(item.description)}</p>
+                                <div class="text-xs text-[#8C6D58] space-y-1">
+                                    <p><i class="fas fa-user mr-2"></i>賣家：${escapeHTML(item.nickname)}</p>
+                                    <p><i class="fas fa-handshake mr-2"></i>交易：${escapeHTML(item.tradeMethod)}</p>
+                                    <p><i class="far fa-calendar-alt mr-2"></i>刊登：${formatDate(item.timestamp)}</p>
+                                </div>
+                            </div>
+                            ${commentSection}
+                        </div>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- Data Mutations ---
+
+        // Submit Share
+        window.submitShare = async function() {
+            if (!currentUser) return;
+            const nickname = document.getElementById('share-nickname').value.trim();
+            const desc = document.getElementById('share-desc').value.trim();
+            
+            if (!nickname || !desc) {
+                showToast("請填寫完整資訊", "error");
+                return;
+            }
+
+            // Generate a random aesthetic image for the demo
+            const colors = ['d6c8b8/5c4d42', 'e5ddd5/4a3b32', 'bcaaa4/3e2723', 'd7ccc8/4e342e'];
+            const randomColor = colors[Math.floor(Math.random() * colors.length)];
+            const imageUrl = `https://placehold.co/600x${600 + Math.floor(Math.random()*400)}/${randomColor}?text=木木+Mumu+Share`;
+
+            try {
+                const sharesRef = collection(db, 'artifacts', appId, 'public', 'data', 'shares');
+                await addDoc(sharesRef, {
+                    nickname: nickname,
+                    imageUrl: imageUrl,
+                    description: desc,
+                    likes: 0,
+                    timestamp: serverTimestamp()
+                });
+                closeModal('modal-share');
+                showToast("分享成功上傳！");
+            } catch (error) {
+                console.error("Error adding share", error);
+                showToast("上傳失敗", "error");
+            }
+        };
+
+        // Submit Market Item
+        window.submitMarket = async function() {
+            if (!currentUser) return;
+            const nickname = document.getElementById('market-nickname').value.trim();
+            const modelId = document.getElementById('market-model').value.trim();
+            const price = document.getElementById('market-price').value.trim();
+            const tradeMethod = document.getElementById('market-method').value.trim();
+            const desc = document.getElementById('market-desc').value.trim();
+
+            if (!nickname || !modelId || !price || !tradeMethod || !desc) {
+                showToast("請填寫所有必填欄位", "error");
+                return;
+            }
+
+            // Dummy proof image
+            const proofUrl = `https://placehold.co/400x400/e0d4c8/6b5343?text=買包證明+\n+${modelId}`;
+
+            try {
+                const marketRef = collection(db, 'artifacts', appId, 'public', 'data', 'market');
+                await addDoc(marketRef, {
+                    nickname: nickname,
+                    modelId: modelId,
+                    proofUrl: proofUrl,
+                    price: Number(price),
+                    tradeMethod: tradeMethod,
+                    description: desc,
+                    isSold: false,
+                    comments: [],
+                    timestamp: serverTimestamp()
+                });
+                closeModal('modal-market');
+                showToast("商品已成功上架！");
+            } catch (error) {
+                console.error("Error adding to market", error);
+                showToast("上架失敗", "error");
+            }
+        };
+
+        // Add Comment
+        window.addComment = async function(docId) {
+            if (!currentUser) return;
+            const nickInput = document.getElementById(`comment-nick-${docId}`);
+            const textInput = document.getElementById(`comment-text-${docId}`);
+            const nickname = nickInput.value.trim();
+            const text = textInput.value.trim();
+
+            if (!nickname || !text) {
+                showToast("請輸入暱稱與留言", "error");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'market', docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    const comments = data.comments || [];
+                    comments.push({ nickname, text, timestamp: new Date().getTime() });
+                    await updateDoc(docRef, { comments });
+                    
+                    // Clear inputs
+                    nickInput.value = '';
+                    textInput.value = '';
+                    showToast("留言成功");
+                }
+            } catch (error) {
+                console.error("Error adding comment", error);
+                showToast("留言失敗", "error");
+            }
+        };
+
+        // Like a share
+        window.likeShare = async function(docId) {
+            if (!currentUser) return;
+            // Prevent spamming likes locally for simple protection
+            const likedKey = `mumu_liked_${docId}`;
+            if (localStorage.getItem(likedKey)) {
+                showToast("您已經按過讚囉！", "error");
+                return;
+            }
+
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'shares', docId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const currentLikes = docSnap.data().likes || 0;
+                    await updateDoc(docRef, { likes: currentLikes + 1 });
+                    localStorage.setItem(likedKey, '1');
+                }
+            } catch (error) {
+                console.error("Error liking", error);
+            }
+        };
+
+        // Toggle Save (Local Storage)
+        window.toggleSave = function(docId) {
+            let saved = JSON.parse(localStorage.getItem('mumu_saved') || '[]');
+            if (saved.includes(docId)) {
+                saved = saved.filter(id => id !== docId);
+                showToast("已取消收藏");
+            } else {
+                saved.push(docId);
+                showToast("已加入本機收藏");
+            }
+            localStorage.setItem('mumu_saved', JSON.stringify(saved));
+            renderShares(); // Re-render to update bookmark icon
+        };
+
+        // Admin Toggle
+        function toggleAdmin() {
+            isAdmin = !isAdmin;
+            const btn = document.getElementById('admin-toggle');
+            if (isAdmin) {
+                btn.textContent = "[ 退出管理員模式 ]";
+                btn.classList.add("text-red-500", "font-bold");
+                showToast("已開啟管理員模式 (展示用)");
+            } else {
+                btn.textContent = "[ 進入管理員模式 ]";
+                btn.classList.remove("text-red-500", "font-bold");
+                showToast("已退出管理員模式");
+            }
+            renderMarket(); // Re-render to show/hide admin buttons
+        }
+
+        // Admin Mark as Sold
+        window.markAsSold = async function(docId) {
+            if (!currentUser || !isAdmin) return;
+            try {
+                const docRef = doc(db, 'artifacts', appId, 'public', 'data', 'market', docId);
+                await updateDoc(docRef, { isSold: true });
+                showToast("已標示為售出");
+            } catch (error) {
+                console.error("Error marking as sold", error);
+                showToast("操作失敗", "error");
+            }
+        };
+
+        // Utility: Escape HTML to prevent XSS
+        function escapeHTML(str) {
+            if (!str) return '';
+            const div = document.createElement('div');
+            div.textContent = str;
+            return div.innerHTML;
+        }
+
+        // Bootstrap App
+        initAuth();
+
+    </script>
+</body>
+</html>
